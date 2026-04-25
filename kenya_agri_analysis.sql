@@ -192,37 +192,17 @@ ORDER BY pct_change_2022 ASC;
 -- SECTION 5: INSIGHT 3 — PRODUCTIVITY GAPS (OPPORTUNITY AREAS)
 -- ────────────────────────────────────────────────────────────
 
--- 5.1 Average vs top-quartile yield per crop (gap = opportunity)
-WITH stats AS (
-    SELECT
-        crop,
-        AVG(yield_tonnes_ha)                    AS avg_yield,
-        -- Top quartile approximation: avg of top 25% records
-        AVG(CASE
-            WHEN yield_tonnes_ha >= (
-                SELECT AVG(y2)
-                FROM (
-                    SELECT yield_tonnes_ha AS y2
-                    FROM agri_data a2
-                    WHERE a2.crop = agri_data.crop
-                    ORDER BY yield_tonnes_ha DESC
-                    LIMIT MAX(1, CAST(COUNT(*) * 0.25 AS INT))
-                )
-            ) THEN yield_tonnes_ha END)          AS top_yield_approx
-    FROM agri_data
-    GROUP BY crop
-)
 SELECT
     crop,
-    ROUND(avg_yield, 2)                         AS avg_yield_t_ha,
-    ROUND(MAX(y.yield_tonnes_ha), 2)            AS best_yield_recorded,
-    ROUND(MAX(y.yield_tonnes_ha) - avg_yield, 2) AS yield_gap,
-    ROUND((MAX(y.yield_tonnes_ha) - avg_yield)
-          * 100.0 / MAX(y.yield_tonnes_ha), 1)  AS gap_pct
-FROM stats s
-JOIN agri_data y USING (crop)
-GROUP BY crop, avg_yield
+    ROUND(AVG(yield_tonnes_ha), 2) AS avg_yield_t_ha,
+    ROUND(MAX(yield_tonnes_ha), 2) AS best_yield_recorded,
+    ROUND(MAX(yield_tonnes_ha) - AVG(yield_tonnes_ha), 2) AS yield_gap,
+    ROUND((MAX(yield_tonnes_ha) - AVG(yield_tonnes_ha))
+          * 100.0 / MAX(yield_tonnes_ha), 1) AS gap_pct
+FROM agri_data
+GROUP BY crop
 ORDER BY gap_pct DESC;
+
 
 -- 5.2 Regions with lowest yield per crop vs national average
 WITH national_avg AS (
